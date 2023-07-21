@@ -1,0 +1,10 @@
+//div[@id="dvreview-listing"]/div[@class="row review-article"]//div[@class="user-ms-name"]/a
+
+links list
+stars list
+
+
+
+step 1 no. rows list size
+
+step2 
