@@ -75,3 +75,13 @@ class Node:
                 root.children.append(dummyNode)
 
         return root
+    
+    def printTree(root: Node, depth=0):
+        for i in range(depth):
+            print("\t", end="")
+        print(root.value, end="")
+        if root.isLeaf:
+            print(" -> ", root.pred)
+        print()
+        for child in root.children:
+            printTree(child, depth + 1)
