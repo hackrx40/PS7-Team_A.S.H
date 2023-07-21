@@ -2,7 +2,7 @@ import pandas as pd
 import math
 import numpy as np
 
-data = pd.read.read_csv(trainingdata.csv)
+data = pd.read_csv("trainingdata.csv")
 features=[feat for feat in data]
 features.remove("answer")
 
@@ -13,7 +13,7 @@ class Node:
         self.isLeaf=False
         self.pred=""
 
-    def entropy(examples):
+    def entropy(self,examples):
         pos=0.0
         neg=0.0
         for _, row in examples.itterrows():
@@ -28,26 +28,26 @@ class Node:
             n=neg/(pos+neg)
             return -(p*math.log(p,2)+n*math.log(n,2))
         
-    def info_gain(examples, attr):
+    def info_gain(self,examples, attr):
         uniq=np.unique(examples[attr])
         #print("\n",uniq)
-        gain=entropy(examples)
+        gain=self.entropy(examples)
         #print("\n",gain)
         for u in uniq:
             subdata = examples[examples[attr]==u]
             #print("\n", subdata)
-            sub_e=entropy(subdata)
+            sub_e=self.entropy(subdata)
             gain-=(float(len(subdata))/float(len(examples)))* sub_e 
             print("\n",gain)
         return gain
     
-    def ID3(examples, attrs):
+    def ID3(self, examples, attrs):
         root = Node()
         max_gain = 0
         max_feat = ""
         for feature in attrs:
             #print ("\n",examples)
-            gain = info_gain(examples, feature)
+            gain = self.info_gain(examples, feature)
             if gain > max_gain:
                 max_gain = gain
                 max_feat = feature
@@ -59,7 +59,7 @@ class Node:
             #print ("\n",u)
             subdata = examples[examples[max_feat] == u]
             #print ("\n",subdata)
-            if entropy(subdata) == 0.0:
+            if self.entropy(subdata) == 0.0:
                 newNode = Node()
                 newNode.isLeaf = True
                 newNode.value = u
@@ -70,13 +70,13 @@ class Node:
                 dummyNode.value = u
                 new_attrs = attrs.copy()
                 new_attrs.remove(max_feat)
-                child = ID3(subdata, new_attrs)
+                child = self.ID3(subdata, new_attrs)
                 dummyNode.children.append(child)
                 root.children.append(dummyNode)
 
         return root
     
-    def printTree(root: Node, depth=0):
+    def printTree(self, root:Node, depth=0):
         for i in range(depth):
             print("\t", end="")
         print(root.value, end="")
@@ -84,13 +84,13 @@ class Node:
             print(" -> ", root.pred)
         print()
         for child in root.children:
-            printTree(child, depth + 1)
+            self.printTree(child, depth + 1)
 
-    def classify(root: Node, new):
+    def classify(self, root:Node, new):
         for child in root.children:
             if child.value == new[root.value]:
                 if child.isLeaf:
                     print ("Predicted Label for new example", new," is:", child.pred)
                     exit
                 else:
-                    classify (child.children[0], new)
+                    self.classify(child.children[0], new)
