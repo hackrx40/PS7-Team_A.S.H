@@ -1,63 +1,98 @@
-import requests
+import time
 import csv
-from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-def fetch_random_users(num_users=1):
-    base_url = 'https://randomuser.me/api/'
-    params = {
-        'results': num_users,
-        'nat': 'us',  # You can change the nationality code to get users from different countries.
-    }
+def login_to_mouthshut(username, password):
+    # Start the Chrome WebDriver
+    driver = webdriver.Chrome()
 
-    response = requests.get(base_url, params=params)
+    try:
+        # Open the login page
+        driver.get("https://www.mouthshut.com/login")
 
-    if response.ok:
-        data = response.json()
-        return data['results']
-    else:
-        response.raise_for_status()
+        # Wait for the email input field to be visible
+        email_input = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "msLoginEmail"))
+        )
 
-def calculate_age(birth_date):
-    birth_date = datetime.strptime(birth_date, "%Y-%m-%dT%H:%M:%S.%fZ")
-    today = datetime.today()
-    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    return age
+        # Enter username and password and submit the form
+        email_input.send_keys(username)
+        driver.find_element(By.ID, "msLoginPassword").send_keys(password)
+        driver.find_element(By.ID, "login-form-btn").click()
 
-def generate_dummy_leads(num_leads):
-    users = fetch_random_users(num_leads)
+        # Wait for the login to complete (you may need to adjust the wait time based on your internet speed)
+        time.sleep(5)
 
-    leads = []
-    for user in users:
-        lead = {
-            'Name': f"{user['name']['first']} {user['name']['last']}",
-            'Email': user['email'],
-            'Phone': user['phone'],
-            'City': user['location']['city'],
-            'State': user['location']['state'],
-            'Country': user['location']['country'],
-            'DateOfBirth': user['dob']['date'],
-            'Age': calculate_age(user['dob']['date']),
-        }
-        leads.append(lead)
+        return driver
+    except Exception as e:
+        print("Error during login:", e)
+        driver.quit()
+        return None
 
-    return leads
+def extract_data(driver, url):
+    try:
+        # Open the URL
+        driver.get(url)
 
-def save_leads_to_csv(leads, file_name):
-    with open(file_name, 'w', newline='') as csvfile:
-        fieldnames = ['Name', 'Email', 'Phone', 'City', 'State', 'Country', 'DateOfBirth', 'Age']
+        # Find the parent element containing all reviews
+        reviews_parent_element = driver.find_element(By.XPATH, "//div[@id='dvreview-listing']")
+
+        # Find all comment elements
+        comment_elements = reviews_parent_element.find_elements(By.XPATH, ".//div[contains(@class, 'reviewdata')]//div[contains(@class, 'more reviewdata-expander')]/preceding-sibling::text()")
+
+        # Find all user profiles
+        user_profiles = reviews_parent_element.find_elements(By.XPATH, ".//div[contains(@class, 'reviewer-profile')]/a")
+
+        # Find all links to user profile pages
+        user_profile_links = [profile.get_attribute("href") for profile in user_profiles]
+
+        # Store the data in a list of dictionaries
+        data_list = []
+        for i, comment_element in enumerate(comment_elements):
+            comment = comment_element.strip()
+            user_profile = user_profiles[i].text.strip()
+            user_profile_link = user_profile_links[i]
+            data_list.append({"Comment": comment, "User Profile": user_profile, "User Profile Link": user_profile_link})
+
+        return data_list
+
+    except Exception as e:
+        print("Error during data extraction:", e)
+        return []
+
+def save_to_csv(data_list, file_name):
+    # Save the data to a CSV file
+    with open(file_name, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ["Comment", "User Profile", "User Profile Link"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
         writer.writeheader()
-        for lead in leads:
-            writer.writerow(lead)
+        for data in data_list:
+            writer.writerow(data)
 
-if __name__ == '__main__':
-    num_leads_to_generate = 100  # Update this to generate 50 dummy leads
-    leads = generate_dummy_leads(num_leads_to_generate)
+if __name__ == "__main__":
+    # Input your MouthShut username and password
+    username = input("Enter your MouthShut email: ")
+    password = input("Enter your MouthShut password: ")
 
-    file_name = 'leaads.csv'
-    save_leads_to_csv(leads, file_name)
+    # URL of the page you want to scrape
+    url = "https://www.mouthshut.com/product-reviews/Patanjali-Dant-Kanti-Toothpaste-reviews-925011850"
 
-    print(f"{num_leads_to_generate} dummy leads generated and saved to {file_name}.")
+    # File name to save the CSV data
+    file_name = "mouthshut_reviews.csv"
 
+    # Login to MouthShut
+    driver = login_to_mouthshut(username, password)
 
+    if driver:
+        # Extract data from the desired page
+        data_list = extract_data(driver, url)
+
+        # Save the data to CSV
+        save_to_csv(data_list, file_name)
+
+        # Close the browser window
+        driver.quit()
