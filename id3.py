@@ -35,4 +35,43 @@ class Node:
         #print("\n",gain)
         for u in uniq:
             subdata = examples[examples[attr]==u]
-            #print("")
+            #print("\n", subdata)
+            sub_e=entropy(subdata)
+            gain-=(float(len(subdata))/float(len(examples)))* sub_e 
+            print("\n",gain)
+        return gain
+    
+    def ID3(examples, attrs):
+        root = Node()
+        max_gain = 0
+        max_feat = ""
+        for feature in attrs:
+            #print ("\n",examples)
+            gain = info_gain(examples, feature)
+            if gain > max_gain:
+                max_gain = gain
+                max_feat = feature
+        root.value = max_feat
+        #print ("\nMax feature attr",max_feat)
+        uniq = np.unique(examples[max_feat])
+        #print ("\n",uniq)
+        for u in uniq:
+            #print ("\n",u)
+            subdata = examples[examples[max_feat] == u]
+            #print ("\n",subdata)
+            if entropy(subdata) == 0.0:
+                newNode = Node()
+                newNode.isLeaf = True
+                newNode.value = u
+                newNode.pred = np.unique(subdata["answer"])
+                root.children.append(newNode)
+            else:
+                dummyNode = Node()
+                dummyNode.value = u
+                new_attrs = attrs.copy()
+                new_attrs.remove(max_feat)
+                child = ID3(subdata, new_attrs)
+                dummyNode.children.append(child)
+                root.children.append(dummyNode)
+
+        return root
