@@ -2,7 +2,6 @@ import time
 import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -12,17 +11,18 @@ def login_to_mouthshut(username, password):
 
     try:
         # Open the login page
-        driver.get("https://www.mouthshut.com/login")
+        driver.get("https://www.mouthshut.com")
+        driver.find_element(By.ID, "sign-in").click()
 
         # Wait for the email input field to be visible
         email_input = WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "msLoginEmail"))
+            EC.visibility_of_element_located((By.ID, "loginId"))
         )
 
         # Enter username and password and submit the form
         email_input.send_keys(username)
-        driver.find_element(By.ID, "msLoginPassword").send_keys(password)
-        driver.find_element(By.ID, "login-form-btn").click()
+        driver.find_element(By.ID, "pwd").send_keys(password)
+        driver.find_element(By.ID, "btnAjax_Login").click()
 
         # Wait for the login to complete (you may need to adjust the wait time based on your internet speed)
         time.sleep(5)
@@ -38,25 +38,25 @@ def extract_data(driver, url):
         # Open the URL
         driver.get(url)
 
-        # Find the parent element containing all reviews
-        reviews_parent_element = driver.find_element(By.XPATH, "//div[@id='dvreview-listing']")
-
-        # Find all comment elements
-        comment_elements = reviews_parent_element.find_elements(By.XPATH, ".//div[contains(@class, 'reviewdata')]//div[contains(@class, 'more reviewdata-expander')]/preceding-sibling::text()")
-
-        # Find all user profiles
-        user_profiles = reviews_parent_element.find_elements(By.XPATH, ".//div[contains(@class, 'reviewer-profile')]/a")
-
-        # Find all links to user profile pages
-        user_profile_links = [profile.get_attribute("href") for profile in user_profiles]
+        # Find all review articles
+        review_articles = driver.find_elements(By.XPATH, "//div[@id='dvreview-listing']/div[@class='row review-article']")
 
         # Store the data in a list of dictionaries
         data_list = []
-        for i, comment_element in enumerate(comment_elements):
-            comment = comment_element.strip()
-            user_profile = user_profiles[i].text.strip()
-            user_profile_link = user_profile_links[i]
-            data_list.append({"Comment": comment, "User Profile": user_profile, "User Profile Link": user_profile_link})
+        for review_article in review_articles:
+            # Find the comment
+            comment_element = review_article.find_element(By.XPATH, ".//div[@class='more reviewdata']/p")
+            comment = comment_element.text.strip()
+
+            # Find the user profile link
+            user_profile_link_element = review_article.find_element(By.XPATH, ".//div[@class='user-ms-name']/a")
+            user_profile_link = user_profile_link_element.get_attribute("href")
+
+            # Find the stars count for this review
+            stars_element = review_article.find_elements(By.XPATH, ".//div[@class='rating']//i[@class='icon-rating rated-star']")
+            stars_count = len(stars_element)
+
+            data_list.append({"Comment": comment, "User Profile Link": user_profile_link, "Stars": stars_count})
 
         return data_list
 
@@ -67,7 +67,7 @@ def extract_data(driver, url):
 def save_to_csv(data_list, file_name):
     # Save the data to a CSV file
     with open(file_name, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ["Comment", "User Profile", "User Profile Link"]
+        fieldnames = ["Comment", "User Profile Link", "Stars"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for data in data_list:
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     password = input("Enter your MouthShut password: ")
 
     # URL of the page you want to scrape
-    url = "https://www.mouthshut.com/product-reviews/Patanjali-Dant-Kanti-Toothpaste-reviews-925011850"
+    url = "https://www.mouthshut.com/product-reviews/Max-Life-Insurance-reviews-925022894-page-5"
 
     # File name to save the CSV data
     file_name = "mouthshut_reviews.csv"
@@ -96,3 +96,4 @@ if __name__ == "__main__":
 
         # Close the browser window
         driver.quit()
+
