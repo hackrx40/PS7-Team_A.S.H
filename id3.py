@@ -27,3 +27,12 @@ class Node:
             p=pos/(pos+neg)
             n=neg/(pos+neg)
             return -(p*math.log(p,2)+n*math.log(n,2))
+        
+    def info_gain(examples, attr):
+        uniq=np.unique(examples[attr])
+        #print("\n",uniq)
+        gain=entropy(examples)
+        #print("\n",gain)
+        for u in uniq:
+            subdata = examples[examples[attr]==u]
+            #print("")
