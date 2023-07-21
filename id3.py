@@ -2,7 +2,7 @@ import pandas as pd
 import math
 import numpy as np
 
-data = pd.read.read_csv()
+data = pd.read.read_csv(trainingdata.csv)
 features=[feat for feat in data]
 features.remove("answer")
 
@@ -21,7 +21,7 @@ class Node:
                 pos+=1
             else:
                 neg+=1
-        if pos = 0.0 or neg = 0.0:
+        if pos == 0.0 or neg == 0.0:
             return 0.0
         else:
             p=pos/(pos+neg)
@@ -85,3 +85,12 @@ class Node:
         print()
         for child in root.children:
             printTree(child, depth + 1)
+
+    def classify(root: Node, new):
+        for child in root.children:
+            if child.value == new[root.value]:
+                if child.isLeaf:
+                    print ("Predicted Label for new example", new," is:", child.pred)
+                    exit
+                else:
+                    classify (child.children[0], new)
