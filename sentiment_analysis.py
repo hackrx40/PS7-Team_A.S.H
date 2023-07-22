@@ -32,4 +32,19 @@ for i in range(0, num_rows):
         else:
             df.at[i, 'Sentiment_Analysis'] = "Neutral"
 
-print(df)
+
+df1=df.copy()
+
+condition = df['Sentiment_Analysis'] == 'Positive'
+
+df2 = df.drop(df[condition].index, inplace=True)
+
+
+#df1-->before filtering
+#df-->after filtering
+
+#print("before filtering:", df1)
+#print("after filtering:", df)
+
+df1.to_csv("before_filter.csv", index=False)
+df.to_csv("after_filter.csv", index=False)
