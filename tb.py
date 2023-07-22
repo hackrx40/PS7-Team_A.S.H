@@ -1,22 +1,29 @@
 from textblob import TextBlob
 import nltk
+import pandas as pd
 
-# Get user input as the article text
-text = input("Enter the text to analyze sentiment: ")
 
-# Perform NLP tasks
-nltk.download('punkt')  # Download the NLTK tokenizer (only once)
+df=pd.read_csv("mouthshut_reviews.csv")
 
-# Create a TextBlob object for sentiment analysis
-obj = TextBlob(text)
+df['sentiment_analysis']=None
 
-# Compute the sentiment polarity of the user input text
-sentiment = obj.sentiment.polarity
+df.columns=["Comment","Profile_Link","Stars","Sentiment_Analysis"]
+num_rows, num_columns = df.shape
 
-# Print the sentiment analysis result
-if sentiment == 0:
-    print('The text is Neutral')
-elif sentiment > 0:
-    print('The text is Strongly Positive')
-else:
-    print('The text is Strongly Negative')
+nltk.download('punkt') 
+
+
+for i in range(0,num_rows):
+    text=df.loc[i,'Comment']
+    obj = TextBlob(text)
+    sentiment = obj.sentiment.polarity
+
+
+    if sentiment == 0:
+        df.at[i, 'Sentiment_Analysis']="Neutral"
+    elif sentiment > 0:
+        df.at[i, 'Sentiment_Analysis']="Positive"
+    else:
+        df.at[i, 'Sentiment_Analysis']="Negative"
+
+print(df)
